@@ -126,6 +126,9 @@ export const triptico = {
   n: 90,
   titulo: 'Tres profesiones, un mismo método.',
   texto: 'Aulas, despachos y facturas parecen mundos distintos. Se resuelven con los mismos siete pasos.',
+  /** Los personajes de los kits (public/personajes), uno delante de su mesa. Ficticios, generados con IA. */
+  personajes: ['docentes', 'legal', 'autonomos'],
+  rotulos: ['Docentes', 'Legal', 'Autónomos'],
 };
 
 /**

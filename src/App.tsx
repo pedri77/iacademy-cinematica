@@ -36,7 +36,7 @@ export default function App() {
         />
         <Metodo />
         <Herramientas />
-        <Triptico etiqueta={triptico.etiqueta} base={`${import.meta.env.BASE_URL}secuencias/triptico/d`} n={triptico.n} titulo={triptico.titulo} texto={triptico.texto} />
+        <Triptico etiqueta={triptico.etiqueta} base={`${import.meta.env.BASE_URL}secuencias/triptico/d`} n={triptico.n} titulo={triptico.titulo} texto={triptico.texto} figuras={triptico.personajes.map((x) => `${import.meta.env.BASE_URL}personajes/${x}.webp`)} rotulos={triptico.rotulos} />
         <Dial etiqueta="Recursos gratuitos en cifras" titulo={cifrasGratis.titulo} principal={cifrasGratis.principal} maximo={cifrasGratis.maximo} divisiones={6} ficha={cifrasGratis.ficha} altoVh={260} />
         <Gratis />
       </main>
