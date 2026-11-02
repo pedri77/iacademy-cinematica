@@ -26,6 +26,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -181,8 +182,14 @@ def pedir(url: str, datos: dict | None = None) -> dict:
     if datos is not None:
         req.add_header("Content-Type", "application/json")
         req.data = json.dumps(datos).encode()
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        # fal explica el motivo en el cuerpo (saldo agotado, clave sin permiso, entrada no válida). Nunca incluye la clave.
+        cuerpo = e.read().decode(errors="replace")[:600]
+        pista = {401: "clave no válida", 403: "saldo agotado o clave sin permiso (mira fal.ai/dashboard/billing)", 422: "entrada no válida"}.get(e.code, "")
+        sys.exit(f"fal respondió {e.code} ({pista}) en {url.split('?')[0]}:\n{cuerpo}\nNo se ha generado nada en esta llamada.")
 
 
 def fal(modelo: str, entrada: dict, pendiente: Path | None = None) -> dict:
