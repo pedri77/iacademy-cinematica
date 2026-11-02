@@ -9,12 +9,15 @@
   uv run scripts/generar_ia.py capas                # render base + 5 capas
   uv run scripts/generar_ia.py capas --solo atril   # generar una sola pieza
   uv run scripts/generar_ia.py personajes --solo rrhh --rehacer   # borrar lo guardado y volver a generar
+  uv run scripts/generar_ia.py video --solo entrada  # plano de entrada a la biblioteca (patrones 12 y 13)
+  uv run scripts/generar_ia.py video --solo triptico # plano cenital para el tríptico (patrón 14)
 
 La clave se lee de la variable de entorno FAL_KEY y nunca se imprime.
 Cada pieza ya generada en ia/ se reutiliza: repetir el comando no vuelve a pagar.
 --max-usd corta antes de pasarse del tope (por defecto, el del presupuesto).
 Precios publicados por fal (02-11-2026): Nano Banana Pro 0,15 $ a 1K/2K, 0,30 $ a 4K;
-BiRefNet v2 0 $ por segundo de cómputo. Pueden cambiar.
+BiRefNet v2 0 $ por segundo de cómputo; Kling v3 Pro imagen a vídeo 0,112 $/s sin audio
+(0,168 $/s con audio: aquí siempre generate_audio=false). Pueden cambiar.
 """
 import argparse
 import base64
@@ -37,6 +40,8 @@ T2I = "fal-ai/nano-banana-pro"
 EDIT = "fal-ai/nano-banana-pro/edit"
 BIREFNET = "fal-ai/birefnet/v2"
 PRECIO = {"1K": 0.15, "2K": 0.15, "4K": 0.30}
+I2V = "fal-ai/kling-video/v3/pro/image-to-video"
+PRECIO_VIDEO_S = 0.112  # sin audio
 
 # ---------------------------------------------------------------- personajes
 ESTILO = (
@@ -86,11 +91,58 @@ CAPAS = {
     "suelo": (SOLO.format(x="the dark wooden floorboards in the foreground, from the base of the shelves to the bottom edge"), True),
 }
 
+# ---------------------------------------------------------------- vídeo
+# Cada plano: fotograma inicial (el render base o una imagen nueva), fotograma final editado desde el
+# inicial (fija el movimiento de cámara: sin él el modelo improvisa) y el vídeo entre ambos.
+CAMARA_FIJA = (
+    " Smooth continuous camera move, no cuts, no shake, no zoom pumping. The library itself stays still: "
+    "nothing moves except the camera, faint dust motes drifting in the light and a very slight flicker of "
+    "the lamp. No people, no characters, no text, no logos appear at any moment."
+)
+PLANOS = {
+    "entrada": {
+        "inicio": None,  # el render base de las capas
+        "inicio_prompt": None,
+        "fin_prompt": (
+            "Same library, same style, palette and lighting. The camera has moved straight forward down the "
+            "centre aisle and now stands just in front of the reading desk, slightly above it: the desk, the "
+            "open book and the red-shaded lamp fill the lower half of the frame, the lit gothic window rises "
+            "behind, and the bookshelves have left the frame on both sides. No people, no text."
+        ),
+        "video_prompt": "Slow, steady dolly-in down the centre aisle of a quiet old library at night, toward the reading desk under the lit gothic window." + CAMARA_FIJA,
+        "segundos": 8,
+    },
+    "triptico": {
+        "inicio": "triptico-inicio.png",
+        "inicio_prompt": (
+            "Same library, same style, palette and lighting, now seen from directly above, looking straight "
+            "down on the reading room: rows of long wooden reading tables with open books, small red-shaded "
+            "lamps casting warm pools of light, and the tops of dark bookshelves between them, arranged in a "
+            "calm symmetrical pattern that reads well when cut into three tall vertical strips. No people, "
+            "no text."
+        ),
+        "fin_prompt": (
+            "Exactly the same top-down view, same style and lighting, but the camera has travelled sideways "
+            "to the right by about one table width, revealing the next tables and lamps. No people, no text."
+        ),
+        "video_prompt": "Slow, steady top-down camera truck sideways to the right over the reading room of a quiet library at night." + CAMARA_FIJA,
+        "segundos": 6,
+    },
+}
+
 # Presupuesto: piezas × precio × factor de reintentos razonable.
 PRESUPUESTO = {
     "personajes": {"llamadas": len(PERSONAJES), "res": "1K", "reintentos": 1.0, "tope": 10},
     "capas": {"llamadas": 1 + len(CAPAS), "res": "4K", "reintentos": 0.5, "tope": 10},
 }
+# Vídeo: imágenes a 2K más segundos de vídeo; un reintento típico por pieza, tope de 6 $.
+VIDEO_TOPE_USD = 6.0
+
+
+def coste_plano(nombre: str) -> float:
+    pl = PLANOS[nombre]
+    imagenes = (1 if pl["inicio_prompt"] else 0) + 1
+    return imagenes * PRECIO["2K"] + pl["segundos"] * PRECIO_VIDEO_S
 
 
 class Gasto:
@@ -124,7 +176,7 @@ def pedir(url: str, datos: dict | None = None) -> dict:
 def fal(modelo: str, entrada: dict) -> dict:
     sub = pedir(f"https://queue.fal.run/{modelo}", entrada)
     estado, respuesta = sub["status_url"], sub["response_url"]
-    for _ in range(180):
+    for _ in range(600):  # hasta 30 min: un vídeo puede tardar varios minutos en cola
         s = pedir(estado)
         if s.get("status") == "COMPLETED":
             return pedir(respuesta)
@@ -136,6 +188,21 @@ def fal(modelo: str, entrada: dict) -> dict:
 
 def data_uri(p: Path) -> str:
     return "data:image/png;base64," + base64.b64encode(p.read_bytes()).decode()
+
+
+def jpg_uri(p: Path, ancho: int = 1920) -> str:
+    """Imagen reducida a JPEG en data URI: un PNG 4K en base64 pasa del límite de la petición."""
+    im = Image.open(p).convert("RGB")
+    if im.width > ancho:
+        im = im.resize((ancho, round(im.height * ancho / im.width)), Image.LANCZOS)
+    b = io.BytesIO()
+    im.save(b, "JPEG", quality=92)
+    return "data:image/jpeg;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def descargar_bytes(url: str) -> bytes:
+    with urllib.request.urlopen(url, timeout=300) as r:
+        return r.read()
 
 
 def descargar(url: str) -> Image.Image:
@@ -168,6 +235,11 @@ def presupuesto():
         print(f"{t:<12}{c['llamadas']:>9}{c['res']:>5}{tipico:>8.2f}${maximo:>7.2f}$")
     print(f"{'total':<26}{total:>8.2f}${tope:>7.2f}$")
     print("Recorte de fondo (BiRefNet) y verde: 0 $. Precios de fal a 02-11-2026.")
+    print()
+    print(f"{'vídeo':<12}{'una toma':>10}{'típico':>9}  (Kling v3 Pro sin audio, {PRECIO_VIDEO_S} $/s; tope {VIDEO_TOPE_USD:.2f} $)")
+    for n, pl in PLANOS.items():
+        c = coste_plano(n)
+        print(f"{n:<12}{c:>9.2f}${2 * c:>8.2f}$  ({pl['segundos']} s)")
 
 
 def personajes(gasto: Gasto, solo: str | None):
@@ -222,25 +294,77 @@ def capas(gasto: Gasto, solo: str | None):
     print("Siguiente: uv run ~/.agents/skills/web-cinematica/scripts/capas.py ia/capas-png public/capas")
 
 
+def video(gasto: Gasto, solo: str | None):
+    carpeta = IA / "video"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    base = IA / "capas" / "base.png"
+    for nombre, pl in PLANOS.items():
+        if solo and nombre != solo:
+            continue
+        # 1. fotograma inicial
+        if pl["inicio"] is None:
+            if not base.exists():
+                sys.exit("Falta ia/capas/base.png (el render base de las capas).")
+            inicio = base
+        else:
+            inicio = carpeta / pl["inicio"]
+            if not inicio.exists():
+                if not base.exists():
+                    sys.exit("Falta ia/capas/base.png: es la referencia de estilo del plano.")
+                gasto.antes(PRECIO["2K"], f"{nombre}: fotograma inicial")
+                r = fal(EDIT, {"prompt": pl["inicio_prompt"], "image_urls": [jpg_uri(base)], "aspect_ratio": "16:9", "resolution": "2K", "output_format": "png"})
+                descargar(r["images"][0]["url"]).save(inicio)
+                print(f"✓ {inicio.relative_to(RAIZ)}")
+        # 2. fotograma final, editado desde el inicial para que sea el mismo lugar
+        fin = carpeta / f"{nombre}-fin.png"
+        if not fin.exists():
+            gasto.antes(PRECIO["2K"], f"{nombre}: fotograma final")
+            r = fal(EDIT, {"prompt": pl["fin_prompt"], "image_urls": [jpg_uri(inicio)], "aspect_ratio": "16:9", "resolution": "2K", "output_format": "png"})
+            descargar(r["images"][0]["url"]).save(fin)
+            print(f"✓ {fin.relative_to(RAIZ)}  ← míralo: si no es el mismo lugar, --rehacer antes de pagar el vídeo")
+        # 3. el vídeo entre los dos
+        mp4 = carpeta / f"{nombre}.mp4"
+        if not mp4.exists():
+            gasto.antes(pl["segundos"] * PRECIO_VIDEO_S, f"{nombre}: vídeo de {pl['segundos']} s")
+            r = fal(I2V, {
+                "prompt": pl["video_prompt"],
+                "start_image_url": jpg_uri(inicio),
+                "end_image_url": jpg_uri(fin),
+                "duration": str(pl["segundos"]),
+                "generate_audio": False,
+                "negative_prompt": "people, person, character, text, letters, cuts, camera shake, morphing, warping, blur, low quality",
+                "cfg_scale": 0.5,
+            })
+            mp4.write_bytes(descargar_bytes(r["video"]["url"]))
+            print(f"✓ {mp4.relative_to(RAIZ)}")
+        print(f"Siguiente: python3 ~/.agents/skills/web-cinematica/scripts/secuencia.py {mp4.relative_to(RAIZ)} public/secuencias/{nombre} --n 120")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("tarea", choices=["presupuesto", "personajes", "capas"])
+    ap.add_argument("tarea", choices=["presupuesto", "personajes", "capas", "video"])
     ap.add_argument("--solo", help="trabajar solo con esta pieza")
     ap.add_argument("--rehacer", action="store_true", help="con --solo: borra lo guardado de esa pieza y la vuelve a generar")
     ap.add_argument("--max-usd", type=float)
     a = ap.parse_args()
     if a.tarea == "presupuesto":
         return presupuesto()
-    c = PRESUPUESTO[a.tarea]
+    if a.solo and a.tarea == "video" and a.solo not in PLANOS:
+        sys.exit(f"Plano desconocido: {a.solo}. Opciones: {', '.join(PLANOS)}")
     if a.rehacer:
         if not a.solo:
             sys.exit("--rehacer necesita --solo <pieza>, para no volver a pagar todo.")
-        carpeta = IA / ("personajes" if a.tarea == "personajes" else "capas")
+        carpeta = IA / {"personajes": "personajes", "capas": "capas", "video": "video"}[a.tarea]
         for p in carpeta.glob(f"{a.solo}*.png"):
             p.unlink()
             print(f"  borrado {p.relative_to(RAIZ)}")
-    gasto = Gasto(a.max_usd if a.max_usd is not None else c["tope"] * PRECIO[c["res"]])
-    (personajes if a.tarea == "personajes" else capas)(gasto, a.solo)
+    if a.tarea == "video":
+        gasto = Gasto(a.max_usd if a.max_usd is not None else VIDEO_TOPE_USD)
+        video(gasto, a.solo)
+    else:
+        c = PRESUPUESTO[a.tarea]
+        gasto = Gasto(a.max_usd if a.max_usd is not None else c["tope"] * PRECIO[c["res"]])
+        (personajes if a.tarea == "personajes" else capas)(gasto, a.solo)
     print(f"Gasto de esta ejecución: {gasto.total:.2f} $")
 
 
