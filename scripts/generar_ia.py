@@ -112,20 +112,32 @@ PLANOS = {
         "video_prompt": "Slow, steady dolly-in down the centre aisle of a quiet old library at night, toward the reading desk under the lit gothic window." + CAMARA_FIJA,
         "segundos": 8,
     },
+    # Tres mesas, tres profesiones de los kits gratis (docentes, legal, autónomos), en el mismo orden que
+    # el abanico. Cada mesa ocupa un tercio exacto del 16:9: el tríptico corta por esas líneas, así que la
+    # cámara NO se desplaza de lado (cada profesión se quedaría a caballo entre dos paneles): baja despacio.
     "triptico": {
         "inicio": "triptico-inicio.png",
         "inicio_prompt": (
-            "Same library, same style, palette and lighting, now seen from directly above, looking straight "
-            "down on the reading room: rows of long wooden reading tables with open books, small red-shaded "
-            "lamps casting warm pools of light, and the tops of dark bookshelves between them, arranged in a "
-            "calm symmetrical pattern that reads well when cut into three tall vertical strips. No people, "
-            "no text."
+            "Same library, same stylised 3D style, palette and night lighting, now seen from directly above, "
+            "looking straight down. Three identical dark wooden reading tables side by side, each one centred in "
+            "exactly one third of the image width (left third, middle third, right third), separated by narrow "
+            "strips of dark floorboards, each table lit by its own small red-shaded lamp. Left table, a teacher's "
+            "desk: stacked notebooks, an open grading rubric, red pen, an apple. Middle table, a lawyer's desk: "
+            "thick case files with ribbons, a fountain pen, a small brass scale, a closed law book. Right table, "
+            "a freelancer's desk: an open laptop with a blank screen, a takeaway coffee cup, a small stack of "
+            "invoices, a phone. Symmetrical, calm, tidy. No people, no hands, no text, no readable writing, "
+            "no logos."
         ),
         "fin_prompt": (
-            "Exactly the same top-down view, same style and lighting, but the camera has travelled sideways "
-            "to the right by about one table width, revealing the next tables and lamps. No people, no text."
+            "Exactly the same top-down view of the same three tables, same objects in the same places, same "
+            "style and lighting, but the camera has descended slightly closer, so each table fills a little "
+            "more of its third. Each table stays centred in its own third. No people, no text."
         ),
-        "video_prompt": "Slow, steady top-down camera truck sideways to the right over the reading room of a quiet library at night." + CAMARA_FIJA,
+        "video_prompt": (
+            "Slow, steady top-down crane move descending gently toward three reading tables in a quiet library "
+            "at night; the composition stays centred and each table stays in its own third of the frame."
+            + CAMARA_FIJA
+        ),
         "segundos": 6,
     },
 }

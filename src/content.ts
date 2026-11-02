@@ -118,6 +118,17 @@ export const entrada = {
 };
 
 /**
+ * Patrón 14: tres mesas vistas desde arriba, una por profesión de los kits gratis (mismo orden que el
+ * abanico: docentes, legal, autónomos). Cada panel enseña un tercio del mismo plano y al final se juntan.
+ */
+export const triptico = {
+  etiqueta: 'Tres profesiones, un mismo método',
+  n: 90,
+  titulo: 'Tres profesiones, un mismo método.',
+  texto: 'Aulas, despachos y facturas parecen mundos distintos. Se resuelven con los mismos siete pasos.',
+};
+
+/**
  * Patrón 15: las cifras de los recursos gratis, sumadas de `gratis.recursos`:
  * prompts 12 + 10 + 30; plantillas 3 + 9; kits por profesión: docentes, legal, autónomos y RRHH.
  */
