@@ -42,8 +42,13 @@ export const robot = {
 export const intro = {
   antetitulo: 'El problema',
   titulo: 'Tienes herramientas. Te falta un método.',
-  cuerpo:
-    'Cada semana sale un modelo nuevo y otra lista de trucos. Lo que separa a quien prueba de quien construye es un camino claro: un reto real, decisiones explicadas y un proyecto que puedes defender.',
+  cuerpo: 'Cada semana sale un modelo nuevo y otra lista de trucos. Lo que separa a quien prueba de quien construye es un camino claro.',
+};
+
+/** Patrón 16: la tesis se enciende palabra a palabra. *palabra* = acento. */
+export const tesis = {
+  frase: 'Un *reto real*, decisiones explicadas y un proyecto que puedes *defender*: eso separa a quien prueba de quien construye.',
+  firma: 'El método IAcademy',
 };
 
 export const metodo = {
@@ -88,6 +93,22 @@ export const gratis = {
     {personaje: 'autonomos', etiqueta: 'Autónomos', titulo: 'IA para autónomos', cuerpo: '30 prompts para facturas, presupuestos y clientes.', href: `${WEB}/free/ia-para-autonomos/`},
     {personaje: 'rrhh', etiqueta: 'Personas', titulo: 'Plantillas IA para RRHH', cuerpo: '9 plantillas: selección, acogida y evaluación.', href: `${WEB}/free/ia-para-rrhh/`},
     {personaje: 'claude', etiqueta: 'Claude', titulo: 'Guía maestra de Claude', cuerpo: 'Del chat al sistema: proyectos, MCP y skills.', href: `${WEB}/free/guia-maestra-claude/`},
+  ],
+};
+
+/**
+ * Patrón 15: las cifras de los recursos gratis, sumadas de `gratis.recursos`:
+ * prompts 12 + 10 + 30; plantillas 3 + 9; kits por profesión: docentes, legal, autónomos y RRHH.
+ */
+export const cifrasGratis = {
+  titulo: 'Todo esto, gratis.',
+  principal: {etiqueta: 'listos para copiar', valor: 52, unidad: 'prompts'},
+  maximo: 60,
+  ficha: [
+    {etiqueta: 'Kits por profesión', valor: 4, unidad: ''},
+    {etiqueta: 'Plantillas', valor: 12, unidad: ''},
+    {etiqueta: 'Guía de Claude', valor: 1, unidad: ''},
+    {etiqueta: 'Precio', valor: 0, unidad: '€'},
   ],
 };
 

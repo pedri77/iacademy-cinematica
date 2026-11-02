@@ -5,7 +5,7 @@ import {useAparecer} from '../hooks/useAparecer';
 export function Intro() {
   const ref = useAparecer<HTMLElement>();
   return (
-    <section ref={ref} aria-labelledby="intro-titulo" className="relative bg-void px-4 pt-[8svh] pb-[20svh] sm:px-6 md:px-[6vw]">
+    <section ref={ref} aria-labelledby="intro-titulo" className="relative bg-void px-4 pt-[8svh] pb-[6svh] sm:px-6 md:px-[6vw]">
       <div className="mx-auto max-w-4xl">
         <p data-aparece className="antetitulo text-rojo uppercase">
           {intro.antetitulo}

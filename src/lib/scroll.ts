@@ -44,3 +44,9 @@ export function irA(hash: string) {
   else destino.scrollIntoView();
   history.replaceState(null, '', hash === '#inicio' ? ' ' : hash);
 }
+
+/** Desplazamiento a una posición en px (pasa por Lenis si está activo, para no pelear con él). */
+export function irAPosicion(y: number, suave = true) {
+  if (lenis) lenis.scrollTo(y, {duration: suave ? 1.1 : 0, immediate: !suave});
+  else window.scrollTo({top: y, behavior: suave ? 'smooth' : 'auto'});
+}
