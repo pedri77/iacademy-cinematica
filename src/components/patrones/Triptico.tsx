@@ -16,8 +16,10 @@ import {ajustarLienzo, cargarSecuencia, cubrir} from '../../lib/secuencia';
  *   0.78 – 0.94  los huecos se cierran y el desfase vuelve a 0: plano entero
  *   0.90 – 1.00  el texto final aparece debajo
  *
- * Todos los paneles pintan con la MISMA escala (cover del plano entero sobre el ancho total), cada uno
- * desplazado por su ranura: por eso encajan al juntarse. No escales los paneles por separado.
+ * Cada panel encaja SU tercio del plano (cover del tercio sobre el panel). Como los tres paneles y los tres
+ * tercios miden lo mismo, la escala es la misma y al juntarse casan. En móvil los paneles son muy estrechos:
+ * un cover del plano entero sobre el ancho total enseñaría solo el centro en los tres; por tercios, cada
+ * panel conserva lo suyo (compón el plano con un motivo centrado en cada tercio).
  */
 
 type Props = {
@@ -73,13 +75,14 @@ export function Triptico({base, n, ext = 'webp', altoVh = 360, titulo, texto, et
         const clave = `${img.src}|${W}x${H}`;
         if (clave !== ultima) {
           ultima = clave;
-          const e = cubrir(img.naturalWidth, img.naturalHeight, W, H);
+          const tercio = img.naturalWidth / 3;
+          const e = cubrir(tercio, img.naturalHeight, ranura, H);
           lienzoRefs.current.forEach((c, i) => {
             if (!c) return;
             const dpr = ajustarLienzo(c);
             const ctx = c.getContext('2d')!;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.drawImage(img, e.x - i * ranura, e.y, e.w, e.h);
+            ctx.drawImage(img, i * tercio, 0, tercio, img.naturalHeight, e.x, e.y, e.w, e.h);
           });
         }
       }
@@ -92,7 +95,9 @@ export function Triptico({base, n, ext = 'webp', altoVh = 360, titulo, texto, et
   return (
     <section ref={raizRef} aria-label={etiqueta} className="relative" style={{height: `${altoVh}svh`}}>
       <div className="sticky top-0 flex h-pantalla flex-col items-center justify-center overflow-hidden bg-void px-[4vw]">
-        <div ref={marcoRef} className="relative grid h-[68svh] w-full max-w-6xl grid-cols-3">
+        {/* Alto limitado por el ancho: cada panel (un tercio) no baja de 0,42 de proporción, así en móvil
+            enseña al menos el 70 % de su tercio (que mide 0,6 en un 16:9). En escritorio manda el 68svh. */}
+        <div ref={marcoRef} className="relative grid w-full max-w-6xl grid-cols-3" style={{height: 'min(68svh, calc((min(100vw, 72rem) - 8vw) / 3 / 0.42))'}}>
           {[0, 1, 2].map((i) => (
             <div
               key={i}

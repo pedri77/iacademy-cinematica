@@ -8,7 +8,8 @@ import {Metodo} from './components/Metodo';
 import {Dial} from './components/patrones/Dial';
 import {PalabraAPalabra} from './components/patrones/PalabraAPalabra';
 import {SecuenciaFijada} from './components/patrones/SecuenciaFijada';
-import {cifrasGratis, entrada, tesis} from './content';
+import {Triptico} from './components/patrones/Triptico';
+import {cifrasGratis, entrada, tesis, triptico} from './content';
 import {useMovimientoReducido} from './hooks/useMovimientoReducido';
 import {iniciarScroll} from './lib/scroll';
 
@@ -35,6 +36,7 @@ export default function App() {
         />
         <Metodo />
         <Herramientas />
+        <Triptico etiqueta={triptico.etiqueta} base={`${import.meta.env.BASE_URL}secuencias/triptico/d`} n={triptico.n} titulo={triptico.titulo} texto={triptico.texto} />
         <Dial etiqueta="Recursos gratuitos en cifras" titulo={cifrasGratis.titulo} principal={cifrasGratis.principal} maximo={cifrasGratis.maximo} divisiones={6} ficha={cifrasGratis.ficha} altoVh={260} />
         <Gratis />
       </main>
