@@ -153,7 +153,7 @@ class Gasto:
         if self.total + usd > self.maximo + 1e-9:
             sys.exit(f"Tope alcanzado: {self.total:.2f} $ gastados, «{que}» costaría {usd:.2f} $ (máx. {self.maximo:.2f} $).")
         self.total += usd
-        print(f"  … {que}: {usd:.2f} $ (acumulado {self.total:.2f} $)")
+        print(f"  … {que}: {usd:.2f} $ (acumulado {self.total:.2f} $)", flush=True)
 
 
 def clave() -> str:
@@ -173,17 +173,34 @@ def pedir(url: str, datos: dict | None = None) -> dict:
         return json.loads(r.read())
 
 
-def fal(modelo: str, entrada: dict) -> dict:
-    sub = pedir(f"https://queue.fal.run/{modelo}", entrada)
+def fal(modelo: str, entrada: dict, pendiente: Path | None = None) -> dict:
+    """Envía a la cola de fal y espera. Con `pendiente`, guarda la petición en disco antes de esperar:
+    si el script se corta o se agota el tiempo, la siguiente ejecución la retoma en vez de pagar otra."""
+    if pendiente and pendiente.exists():
+        sub = json.loads(pendiente.read_text())
+        print(f"  retomo la petición guardada en {pendiente.name}", flush=True)
+    else:
+        sub = pedir(f"https://queue.fal.run/{modelo}", entrada)
+        if pendiente:
+            pendiente.write_text(json.dumps({k: sub[k] for k in ("request_id", "status_url", "response_url") if k in sub}))
     estado, respuesta = sub["status_url"], sub["response_url"]
-    for _ in range(600):  # hasta 30 min: un vídeo puede tardar varios minutos en cola
+    ultimo = ""
+    for i in range(1200):  # hasta 60 min: un vídeo puede pasar mucho rato en cola
         s = pedir(estado)
-        if s.get("status") == "COMPLETED":
-            return pedir(respuesta)
-        if s.get("status") not in ("IN_QUEUE", "IN_PROGRESS"):
-            sys.exit(f"fal devolvió estado {s.get('status')} para {modelo}")
+        st = s.get("status")
+        if st != ultimo or i % 20 == 0:
+            extra = f" (posición {s['queue_position']})" if s.get("queue_position") is not None else ""
+            print(f"  {modelo}: {st}{extra} · {i * 3 // 60} min", flush=True)
+            ultimo = st
+        if st == "COMPLETED":
+            r = pedir(respuesta)
+            if pendiente:
+                pendiente.unlink(missing_ok=True)
+            return r
+        if st not in ("IN_QUEUE", "IN_PROGRESS"):
+            sys.exit(f"fal devolvió estado {st} para {modelo}")
         time.sleep(3)
-    sys.exit(f"Tiempo agotado esperando a {modelo}")
+    sys.exit(f"Tiempo agotado esperando a {modelo}. La petición sigue guardada en {pendiente}: vuelve a lanzar el comando para retomarla sin pagar otra." if pendiente else f"Tiempo agotado esperando a {modelo}")
 
 
 def data_uri(p: Path) -> str:
@@ -324,8 +341,10 @@ def video(gasto: Gasto, solo: str | None):
             print(f"✓ {fin.relative_to(RAIZ)}  ← míralo: si no es el mismo lugar, --rehacer antes de pagar el vídeo")
         # 3. el vídeo entre los dos
         mp4 = carpeta / f"{nombre}.mp4"
+        pendiente = carpeta / f"{nombre}.pendiente.json"
         if not mp4.exists():
-            gasto.antes(pl["segundos"] * PRECIO_VIDEO_S, f"{nombre}: vídeo de {pl['segundos']} s")
+            if not pendiente.exists():  # retomar una petición ya enviada no se vuelve a cobrar
+                gasto.antes(pl["segundos"] * PRECIO_VIDEO_S, f"{nombre}: vídeo de {pl['segundos']} s")
             r = fal(I2V, {
                 "prompt": pl["video_prompt"],
                 "start_image_url": jpg_uri(inicio),
@@ -334,7 +353,7 @@ def video(gasto: Gasto, solo: str | None):
                 "generate_audio": False,
                 "negative_prompt": "people, person, character, text, letters, cuts, camera shake, morphing, warping, blur, low quality",
                 "cfg_scale": 0.5,
-            })
+            }, pendiente)
             mp4.write_bytes(descargar_bytes(r["video"]["url"]))
             print(f"✓ {mp4.relative_to(RAIZ)}")
         print(f"Siguiente: python3 ~/.agents/skills/web-cinematica/scripts/secuencia.py {mp4.relative_to(RAIZ)} public/secuencias/{nombre} --n 120")

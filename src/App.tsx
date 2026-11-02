@@ -7,7 +7,8 @@ import {Cabecera, Cierre} from './components/Marco';
 import {Metodo} from './components/Metodo';
 import {Dial} from './components/patrones/Dial';
 import {PalabraAPalabra} from './components/patrones/PalabraAPalabra';
-import {cifrasGratis, tesis} from './content';
+import {SecuenciaFijada} from './components/patrones/SecuenciaFijada';
+import {cifrasGratis, entrada, tesis} from './content';
 import {useMovimientoReducido} from './hooks/useMovimientoReducido';
 import {iniciarScroll} from './lib/scroll';
 
@@ -22,6 +23,16 @@ export default function App() {
         <Escenario />
         <Intro />
         <PalabraAPalabra etiqueta="La tesis del método" frase={tesis.frase} firma={tesis.firma} altoVh={240} />
+        <SecuenciaFijada
+          etiqueta={entrada.etiqueta}
+          base={`${import.meta.env.BASE_URL}secuencias/entrada/d`}
+          baseMovil={`${import.meta.env.BASE_URL}secuencias/entrada/m`}
+          recorteMovil={entrada.recorteMovil}
+          n={entrada.n}
+          capitulos={entrada.capitulos}
+          anclas={entrada.anclas}
+          altoVh={440}
+        />
         <Metodo />
         <Herramientas />
         <Dial etiqueta="Recursos gratuitos en cifras" titulo={cifrasGratis.titulo} principal={cifrasGratis.principal} maximo={cifrasGratis.maximo} divisiones={6} ficha={cifrasGratis.ficha} altoVh={260} />

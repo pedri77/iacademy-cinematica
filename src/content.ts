@@ -97,6 +97,27 @@ export const gratis = {
 };
 
 /**
+ * Patrones 12 y 13: un plano de 8 s (Kling v3 Pro a partir del render de las capas, ver
+ * scripts/generar_ia.py video) convertido en 120 fotos. Las anclas van en coordenadas de la foto de
+ * escritorio (0–1), medidas sobre las fotos 1, 30, 60, 90 y 120.
+ */
+export const entrada = {
+  etiqueta: 'Entra en la biblioteca',
+  n: 120,
+  recorteMovil: [0.4027, 0.3146] as [number, number],
+  capitulos: [
+    {desde: 0.04, hasta: 0.32, titulo: 'Un sitio sin ruido', texto: 'Fuera se quedan las listas de trucos. Dentro, solo lo que necesitas para trabajar.'},
+    {desde: 0.36, hasta: 0.64, titulo: 'Las herramientas, a mano', texto: 'No hace falta tenerlas todas: basta con saber dónde están y cuál usar.'},
+    {desde: 0.68, hasta: 0.96, titulo: 'Tu mesa, tu proyecto', texto: 'Al final del pasillo te espera un reto real. Ahí empieza el paso uno.'},
+  ],
+  anclas: [
+    {id: 'ventanal', etiqueta: 'La idea', detalle: 'todo empieza por un reto real', claves: [[4, 0.5, 0.35], [29, 0.51, 0.36], [59, 0.51, 0.36], [89, 0.51, 0.34], [110, 0.5, 0.35]]},
+    {id: 'estanterias', etiqueta: 'Herramientas', detalle: 'las justas, bien elegidas', claves: [[2, 0.85, 0.42], [29, 0.9, 0.42], [50, 0.95, 0.42]]},
+    {id: 'proyecto', etiqueta: 'Tu proyecto', detalle: 'el que vas a defender', claves: [[60, 0.605, 0.663], [89, 0.567, 0.648], [119, 0.533, 0.65]]},
+  ] as {id: string; etiqueta: string; detalle: string; claves: [number, number, number][]}[],
+};
+
+/**
  * Patrón 15: las cifras de los recursos gratis, sumadas de `gratis.recursos`:
  * prompts 12 + 10 + 30; plantillas 3 + 9; kits por profesión: docentes, legal, autónomos y RRHH.
  */
@@ -115,5 +136,5 @@ export const cifrasGratis = {
 export const cierre = {
   titulo: '¿Empezamos por el paso uno?',
   cta: 'Ver los recursos gratis',
-  aviso: 'Demo de scroll cinematográfico. Escenario y personajes generados con IA.',
+  aviso: 'Demo de scroll cinematográfico. Escenario, vídeo y personajes generados con IA.',
 };

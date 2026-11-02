@@ -212,3 +212,61 @@ html.lenis body {
     transform: translate3d(0, 10px, 0);
   }
 }
+
+/* Patrón 13: etiqueta anclada a un punto que se mueve dentro del plano.
+   El contenedor se coloca en el punto (transform); punto, línea y texto cuelgan de él. */
+.ancla {
+  --largo: 64px;
+}
+.ancla-punto {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-texto);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-rojo) 35%, transparent);
+}
+.ancla-linea {
+  position: absolute;
+  top: 0;
+  left: 5px;
+  width: var(--largo);
+  height: 1px;
+  background: color-mix(in oklch, var(--color-texto) 70%, transparent);
+}
+.ancla-texto {
+  position: absolute;
+  top: -1.4em;
+  left: calc(var(--largo) + 10px);
+  white-space: nowrap;
+  /* píldora oscura: el plano puede ser claro justo donde cae la etiqueta (vidrieras, cielos) */
+  padding: 0.45em 0.8em 0.5em;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--color-void) 72%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 0.75rem;
+  letter-spacing: var(--text-etiqueta--letter-spacing);
+  text-transform: uppercase;
+  color: var(--color-texto);
+}
+.ancla-texto b {
+  display: block;
+  font-weight: 600;
+}
+.ancla-texto small {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-texto-2);
+  letter-spacing: 0.08em;
+}
+.ancla[data-lado="izq"] .ancla-linea {
+  left: auto;
+  right: 5px;
+}
+.ancla[data-lado="izq"] .ancla-texto {
+  left: auto;
+  right: calc(var(--largo) + 10px);
+  text-align: right;
+}
